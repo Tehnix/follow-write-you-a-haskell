@@ -5,4 +5,4 @@ Each milestone/chapter (whichever most fitting) will be separated into branches,
 
 ## Branches
 - master : Will always represent the furthest status of the repository into the book.
-- nanoparsec : Contains the NanoParsec parser from chapter 2 on parsers, along with tests for the parser.
+- chapter-2-nanoparsec : Contains the NanoParsec parser from chapter 2 on parsers, along with tests for the parser.
