@@ -1,0 +1,46 @@
+name:                wuah
+version:             0.1.0.0
+github:              Tehnix/write-you-a-haskell-follow
+license:             BSD3
+author:              Christian Kjaer Laustsen
+maintainer:          ckl@codetalk.io
+copyright:           Christian Kjaer Laustsen
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:
+# description:
+# category:            Miscellaneous
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+executables:
+  wuah-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - wuah
+
+tests:
+  spec:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - wuah
+    - QuickCheck
+    - hspec
