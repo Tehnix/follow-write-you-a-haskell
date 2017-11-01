@@ -35,7 +35,7 @@ eval ex =
     Add a b -> eval a + eval b
     Mul a b -> eval a * eval b
     Sub a b -> eval a - eval b
-    Lit n   -> n
+    Lit n -> n
 
 -- | Parse in one or more occurences of a `term`, separated by an operator,
 -- `addop` (addition and subtraction).
