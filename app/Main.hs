@@ -1,12 +1,6 @@
 module Main where
 
-import AbstractSyntaxTree (eval, run)
-
-import Control.Monad
+import Repl (repl)
 
 main :: IO ()
-main =
-  forever $ do
-    putStr "> "
-    a <- getLine
-    print $ eval $ run a
+main = repl

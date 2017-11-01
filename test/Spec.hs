@@ -1,41 +1,42 @@
 module Main where
 
 import Control.Exception (evaluate)
+import Control.Monad.Trans
 import Test.Hspec
 import Test.QuickCheck
 
-import AbstractSyntaxTree (eval, run)
+import Repl (process)
 
 -- | Validate the parser by going through all allowed and diallowed
 -- cases.
 main :: IO ()
 main =
   hspec $
-  describe "AbstractSyntaxTree.eval" $ do
-    it "can evaluate addition" $
-      property $ \(n, m) -> do
-        let res = eval $ run $ show n ++ "+" ++ show m
-        res == (n + m :: Int)
-    it "can evaluate subtraction" $
-      property $ \(n, m) -> do
-        let res = eval $ run $ show n ++ "-" ++ show m
-        res == (n - m :: Int)
-    it "can evaluate multiplication" $
-      property $ \(n, m) -> do
-        let res = eval $ run $ show n ++ "*" ++ show m
-        res == (n * m :: Int)
-    it "can evaluate parentheses" $
-      property $ \(n, m) -> do
-        let res =
-              eval $
-              run $
-              show n ++ "+" ++ show m ++ "+(" ++ show n ++ "+" ++ show m ++ ")"
-        res == (n + m + (n + m) :: Int)
-    it "cannot evaluate division" $
-      evaluate (eval $ run "5/8") `shouldThrow` anyException
-    it "cannot parse spaces" $
-      evaluate (eval $ run "5 +8") `shouldThrow` anyException
-    it "cannot evaluate characters" $
-      property $ \(n, m) -> do
-        let res = eval $ run $ show (n :: Char) ++ "+" ++ show (m :: Char)
-        evaluate res `shouldThrow` anyException
+  describe "Repl.repl" $ do
+    it "succ 0 == id" $ do
+      let line = "succ 0"
+      (process line) `shouldBe` line
+    it "nested succ 0's == id" $ do
+      let line = "succ (succ 0)"
+      (process line) `shouldBe` line
+    it "iszero 0 is true" $ do
+      let line = "iszero 0"
+      (process line) `shouldBe` "true"
+    it "iszero (succ 0) is false" $ do
+      let line = "iszero (succ 0)"
+      (process line) `shouldBe` "false"
+    it "pred (succ 0) is 0" $ do
+      let line = "pred (succ 0)"
+      (process line) `shouldBe` "0"
+    it "iszero (pred (succ (succ 0))) is false" $ do
+      let line = "iszero (pred (succ (succ 0)))"
+      (process line) `shouldBe` "false"
+    it "if false then true else false evaluates to false" $ do
+      let line = "if false then true else false"
+      (process line) `shouldBe` "false"
+    it "if 0 then true else false cannot evaluate" $ do
+      let line = "if 0 then true else false"
+      (process line) `shouldBe` "Cannot evaluate"
+    it "iszero false cannot evaluate" $ do
+      let line = "iszero false"
+      (process line) `shouldBe` "Cannot evaluate"
