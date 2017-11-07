@@ -1,14 +1,18 @@
 module Syntax where
 
+type Name = String
+
 -- | Our abstract syntax tree for our language grammar.
 data Expr
-  = Tr
-  | Fl
-  | Zero
-  | IsZero Expr
-  | Succ Expr
-  | Pred Expr
-  | If Expr
-       Expr
-       Expr
+  = Var Name
+  | Lit Lit
+  | App Expr
+        Expr
+  | Lam Name
+        Expr
   deriving (Eq, Show)
+
+data Lit
+  = LInt Int
+  | LBool Bool
+  deriving (Show, Eq, Ord)

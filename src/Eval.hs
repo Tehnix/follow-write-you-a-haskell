@@ -1,56 +1,76 @@
 module Eval where
 
+import qualified Data.Map as Map
 import Syntax
 
-import Data.Functor
-import Data.Maybe
+import Control.Monad.State
+import Control.Monad.Writer
 
--- | Check if value is a number.
-isNum :: Expr -> Bool
-isNum Zero = True
-isNum (Succ t) = isNum t
-isNum _ = False
+data Value
+  = VInt Integer
+  | VBool Bool
+  | VClosure String
+             Expr
+             (Eval.Scope)
 
--- | Check if we are dealing with a value.
-isVal :: Expr -> Bool
-isVal Tr = True
-isVal Fl = True
-isVal t
-  | isNum t = True
-isVal _ = False
+instance Show Value where
+  show (VInt x) = show x
+  show (VBool x) = show x
+  show VClosure {} = "<<closure>>"
 
--- | Perform the evaluation by taking a single small step from one expression
--- to another given the rules in the case. We use the `Maybe` applicative to 
--- handle the fact that our reduction may halt at any time, with a `Nothing`,
--- or simply isn't well defined.
--- Simplified: Apply `eval'` on the expression until we hit a literal value.
-eval' :: Expr -> Maybe Expr
-eval' x =
-  case x of
-    IsZero Zero -> Just Tr
-    IsZero (Succ t)
-      | isNum t -> Just Fl
-    IsZero t -> IsZero <$> (eval' t)
-    Succ t -> Succ <$> (eval' t)
-    Pred Zero -> Just Zero
-    Pred (Succ t)
-      | isNum t -> Just t
-    Pred t -> Pred <$> (eval' t)
-    If Tr c _ -> Just c
-    If Fl _ a -> Just a
-    If t c a -> (\t' -> If t' c a) <$> eval' t
-    _ -> Nothing
+data EvalState = EvalState
+  { depth :: Int
+  } deriving (Show)
 
--- | Return the evaluated expression, if successfull, or the original expression
--- back if not. 
-nf :: Expr -> Expr
-nf x = fromMaybe x (nf <$> eval' x)
+inc :: Eval a -> Eval a
+inc m = do
+  modify $ \s -> s {depth = (depth s) + 1}
+  out <- m
+  modify $ \s -> s {depth = (depth s) - 1}
+  return out
 
--- | Evaluate the expression, returning the result if it's a value, otherwise
--- `Nothing` if the term evaluation is stuck.
-eval :: Expr -> Maybe Expr
-eval t =
-  case nf t of
-    nft
-      | isVal nft -> Just nft
-      | otherwise -> Nothing -- the term is "stuck"
+red :: Expr -> Eval ()
+red x = do
+  d <- gets depth
+  tell [(d, x)]
+  return ()
+
+type Step = (Int, Expr)
+
+type Eval a = WriterT [Step] (State EvalState) a
+
+type Scope = Map.Map String Value
+
+eval :: Eval.Scope -> Expr -> Eval Value
+eval env expr =
+  case expr of
+    Lit (LInt x) -> do
+      return $ VInt (fromIntegral x)
+    Lit (LBool x) -> do
+      return $ VBool x
+    Var x -> do
+      red expr
+      return $ env Map.! x
+    Lam x body -> inc $ do return (VClosure x body env)
+    App a b ->
+      inc $ do
+        x <- eval env a
+        red a
+        y <- eval env b
+        red b
+        apply x y
+
+extend :: Scope -> String -> Value -> Scope
+extend env v t = Map.insert v t env
+
+apply :: Value -> Value -> Eval Value
+apply (VClosure n e clo) ex = do
+  eval (extend clo n ex) e
+apply _ _ = error "Tried to apply non-closure"
+
+emptyScope :: Scope
+emptyScope = Map.empty
+
+-- | Evaluate the expression, returning the final value and the steps taken.
+runEval :: Expr -> (Value, [Step])
+runEval x = evalState (runWriterT (eval emptyScope x)) (EvalState 0)

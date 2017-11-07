@@ -21,6 +21,7 @@ dependencies:
 - haskeline
 - mtl
 - pretty
+- containers
 
 library:
   source-dirs: src
